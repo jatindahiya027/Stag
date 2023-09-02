@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- <title>Custom Title Bar Color</title> -->
+    <link rel="stylesheet" href="index.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        overflow: hidden;
+        height: 100vh;
+        font-family: "Roboto";
+        background-color: #303134;
+      }
+      #container {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+      }
+      #left {
+        width: 200px;
+        background-color: #353639;
+        overflow: hidden;
+        padding: 10px;
+        height: 100%;
+      }
+
+      #right {
+        flex: 1;
+        background-color: #303134;
+        overflow-y: scroll;
+        padding: 5px;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+
+      #right::-webkit-scrollbar {
+        width: 0.5em; /* Adjust the width of the scrollbar if needed */
+      }
+
+      #right::-webkit-scrollbar-track {
+        background-color: transparent; /* Change to desired track color */
+      }
+
+      #right::-webkit-scrollbar-thumb {
+        background-color: rgb(73, 73, 73); /* Change to desired thumb color */
+        border-radius: 10px;
+      }
+
+      .card {
+        /* margin: 0px; */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        text-align: center;
+        width: auto;
+        margin-bottom: 10px;
+        padding: 1px;
+        /* max-height: 100px; */
+      }
+
+      .card-image {
+        width: auto;
+        height: 150px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+
+      .card-text {
+        margin-top: 10px; /* Add margin between image and text */
+        color: rgb(190, 190, 190);
+        max-width: 150px;
+      }
+
+      .card-text > p {
+        margin: 0;
+        white-space: normal; /* Allow text to wrap */
+        overflow: hidden;
+        font-size: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* Limit to 2 lines */
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+        max-width: 150px;
+      }
+
+      .card-text > div {
+        margin: 0;
+        color: rgb(134, 134, 134);
+        font-size: 13px;
+        margin-top: 5px;
+      }
+      #third {
+        width: 270px;
+        background-color: #353639;
+        padding: 10px;
+        height: 100vh;
+        /* margin-top: 10px; */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <!-- <div id="left">
+       
+        First Division
+      </div> -->
+      <div id="right">
+        <!-- Content for the second division (scrollable) -->
+
+        <!-- Repeat the above .card structure for a total of 20 cards -->
+      </div>
+    </div>
+    <div id="third">
+      <div id="thumbnaildiv">
+        <img id="thumbnail" src="test.png" alt="No Image" />
+      </div>
+      <div id="colors" class="flex-container">
+        <div style="border-radius: 5px 0px 0px 5px">1</div>
+        <div>2</div>
+        <div>3</div>
+        <div>1</div>
+        <div>2</div>
+        <div style="border-radius: 0px 5px 5px 0px">3</div>
+      </div>
+      <div id="imgname" class="textbox">Name....</div>
+      <div id="imgpath" class="textbox">Path....</div>
+      <div class="info">
+        <h1>Properties</h1>
+        <div id="metada" class="unknown">
+          <p>Dimensions:</p>
+          <p>Type:</p>
+          <p>Size:</p>
+          <p>Date Created:</p>
+          <p>Date Modified:</p>
+        </div>
+      </div>
+    </div>
+    <script src="godmode.js"></script>
+    <script src="delme.js"></script>
+  </body>
+</html>

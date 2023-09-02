@@ -1,0 +1,101 @@
+#thumbnaildiv {
+  padding-top: 10px;
+  max-height: 25vh;
+  width: auto;
+  display: flex; /* Change to flex */
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  height: 26vh;
+}
+
+#thumbnail {
+  border-radius: 10px;
+  max-height: 25vh;
+  width: auto;
+  max-width: 220px;
+  height: auto;
+}
+
+.textbox {
+  border-width: 1px;
+  border-color: #000000;
+  border-style: solid;
+  border-radius: 10px;
+  padding: 10px;
+  width: auto;
+  height: 6vh;
+  display: block;
+  background-color: #2a2b2f;
+  font-size: 15px;
+  color: #89898b;
+  text-align: left;
+  margin-top: 10px;
+  white-space: normal; /* Allow text to wrap */
+  overflow: auto; /* Add scrollbars if content overflows */
+  display: -webkit-box;
+  -webkit-line-clamp: 4; /* Limit to 2 lines */
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  /* max-width: 150px; */
+}
+.textbox::-webkit-scrollbar {
+  height: 0.1em;
+  width: 0.1em; /* Adjust the width of the scrollbar if needed */
+}
+
+.textbox::-webkit-scrollbar-track {
+  background-color: transparent; /* Change to desired track color */
+}
+
+.textbox::-webkit-scrollbar-thumb {
+  background-color: rgb(73, 73, 73); /* Change to desired thumb color */
+  border-radius: 10px;
+}
+
+.info {
+  text-align: left;
+  color: azure;
+  margin-top: 60px;
+  /* padding-left: 50px; */
+  /* font-size: 30px; */
+  /* margin-bottom: 2px; */
+}
+
+.info > h1 {
+  margin-bottom: 20px;
+}
+.info > div > p {
+  font-size: 13px;
+  color: #89898b;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  /* margin-left: 10px; */
+}
+
+.flex-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 30px;
+}
+
+.flex-container > div {
+  background-color: #f1f1f1;
+  margin: 2px;
+  padding: 10px;
+  padding-left: 25px;
+  font-size: 0px;
+}
+/* #unknown{
+  padding-top: 100px;
+} */
+/* styles.css */
+/* Customize the title bar */
+
+
+
+
+
+
