@@ -1,7 +1,7 @@
 module.exports = {
   packagerConfig: {
     asar: true,
-    icon: 'C:/Users/91741/Downloads/eagle_clone_app/eagle_app_clone/src/icon/icon.ico' // no file extension required
+    icon: 'src/icon/icon.ico' // no file extension required
     
   },
   rebuildConfig: {},
@@ -9,7 +9,7 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        setupIcon:'C:/Users/91741/Downloads/eagle_clone_app/eagle_app_clone/src/icon/icon.ico'
+        setupIcon:'src/icon/icon.ico'
       },
     },
     {
