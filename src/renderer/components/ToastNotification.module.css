@@ -1,0 +1,11 @@
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 99999; padding: 9px 18px; border-radius: var(--radius-xl);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s ease-out;
+  pointer-events: all; max-width: 380px; text-align: center;
+}
+.success { background: #1e3a2a; color: var(--success); border: 1px solid rgba(82,192,120,0.3); }
+.error   { background: #3a1e1e; color: var(--danger);  border: 1px solid rgba(224,82,82,0.3); }
+.info    { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-light); }

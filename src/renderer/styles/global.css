@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --glass-opacity:  0.07;
+  --blur-strength:  18px;
+
+  --bg-base:       #0a0c10;   /* raw base — JS writes this */
+  --bg-app:        #0a0c10;   /* alias used everywhere */
+  --bg-primary:    rgba(14, 16, 22, 0.96);
+  --bg-secondary:  rgba(20, 22, 30, 0.96);
+  --bg-tertiary:   rgba(28, 31, 42, 0.92);
+  --bg-card:       rgba(22, 25, 35, 0.88);
+  --bg-hover:      rgba(255,255,255,0.055);
+  --bg-active:     rgba(255,255,255,0.08);
+  --glass:         rgba(255,255,255,var(--glass-opacity));
+  --glass-border:  rgba(255,255,255,0.10);
+  --border:        rgba(255,255,255,0.065);
+  --border-light:  rgba(255,255,255,0.12);
+
+  --text-primary:  #eaecf0;
+  --text-secondary:#9ba2ad;
+  --text-muted:    #5a6070;
+  --text-dim:      #363c48;
+
+  --accent:        #4a9eff;
+  --accent-hover:  #6ab2ff;
+  --accent-dim:    rgba(74,158,255,0.14);
+  --accent-glow:   rgba(74,158,255,0.28);
+
+  --tag-bg:        rgba(255,255,255,0.07);
+  --tag-text:      #bdc3ce;
+  --star-color:    #f5a623;
+  --danger:        #e05252;
+  --danger-dim:    rgba(224,82,82,0.12);
+  --success:       #52c078;
+
+  --radius-xs:3px;--radius-sm:5px;--radius-md:7px;
+  --radius-lg:11px;--radius-xl:16px;--radius-2xl:22px;
+
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.55);
+  --shadow-md:0 4px 18px rgba(0,0,0,0.55);
+  --shadow-lg:0 8px 36px rgba(0,0,0,0.7);
+  --shadow-xl:0 24px 64px rgba(0,0,0,0.85);
+
+  --titlebar-height:40px;
+  --sidebar-width:222px;
+  --inspector-width:266px;
+}
+
+html, body, #root { width:100%;height:100%;overflow:hidden; }
+
+body {
+  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:13px;
+  background: var(--bg-app);
+  color:var(--text-primary);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  user-select:none;
+}
+
+/* #root uses CSS variable so JS can update it live via --bg-app */
+#root {
+  position:relative;
+  /* Layered: subtle accent glow on top, then bg-app colour */
+  background:
+    radial-gradient(ellipse 130% 60% at 50% -5%, rgba(74,158,255,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 100%, rgba(60,80,200,0.04) 0%, transparent 55%),
+    var(--bg-app);
+  /* NOTE: When JS changes --bg-app the whole background updates automatically */
+}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.18);}
+
+input,textarea{font-family:inherit;font-size:inherit;}
+button{cursor:pointer;font-family:inherit;}
+
+/* user-drag only on actual draggable cards */
+*{-webkit-user-drag:none;}
+[draggable="true"]{-webkit-user-drag:element;}
+
+@keyframes fadeIn  {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes scaleIn {from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+@keyframes spin    {to{transform:rotate(360deg)}}
+@keyframes cardIn  {from{opacity:0;transform:translateY(6px) scale(0.97)}to{opacity:1;transform:none}}
+@keyframes shimmer {0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse   {0%,100%{opacity:1}50%{opacity:.5}}

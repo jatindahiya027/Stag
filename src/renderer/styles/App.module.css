@@ -1,0 +1,25 @@
+.app {
+  display: flex; flex-direction: column;
+  width: 100vw; height: 100vh; overflow: hidden;
+  background: var(--bg-app);
+}
+.body { display: flex; flex: 1; overflow: hidden; }
+.workspace {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+.dragActive { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dropOverlay {
+  position: absolute; inset: 0; z-index: 999;
+  background: rgba(74,158,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; animation: fadeIn 0.1s ease-out;
+}
+.dropBox {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: var(--bg-secondary); border: 2px dashed var(--accent);
+  border-radius: var(--radius-xl); padding: 48px 72px; box-shadow: var(--shadow-xl);
+}
+.dropArrow { font-size: 40px; }
+.dropBox p { color: var(--accent); font-size: 16px; font-weight: 600; }
+.dropSub { font-size: 12px !important; color: var(--text-muted) !important; font-weight: 400 !important; }

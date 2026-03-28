@@ -1,0 +1,128 @@
+.toolbar {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.toolbarMain {
+  height: 44px;
+  display: flex; align-items: center;
+  gap: 8px; padding: 0 12px;
+}
+
+.left { display: flex; align-items: center; gap: 6px; }
+.title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.count { font-size: 11px; color: var(--text-muted); background: var(--bg-tertiary); padding: 1px 7px; border-radius: 10px; }
+
+.right { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+
+/* Progress bar — its own slim row below the main toolbar row */
+.progressWrap {
+  width: 100%;
+  padding: 0 12px 6px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: var(--bg-secondary);
+}
+.progressTrack {
+  width: 100%; height: 3px;
+  background: var(--border-light);
+  border-radius: 2px; overflow: hidden;
+}
+.progressBar {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; transition: width 0.2s;
+  min-width: 4px;
+}
+.progressText { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Slider */
+.sizeSlider { display: flex; align-items: center; gap: 6px; }
+.slider {
+  width: 80px; height: 3px;
+  -webkit-appearance: none; background: var(--border-light);
+  border-radius: 2px; cursor: pointer; outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+}
+
+.importBtn {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-md);
+  font-size: 12px; font-family: inherit; font-weight: 500;
+  padding: 5px 11px; cursor: pointer; white-space: nowrap;
+  transition: background 0.12s, opacity 0.12s;
+}
+.importBtn:hover { background: var(--accent-hover); }
+.importBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.iconBtn {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-md); border: none; background: transparent;
+  color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; transition: background 0.12s, color 0.12s;
+}
+.iconBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.activeBtn { background: var(--accent-dim) !important; color: var(--accent) !important; }
+
+.filterDot {
+  position: absolute; top: 5px; right: 5px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
+
+.sortSelect {
+  background: transparent; border: none;
+  color: var(--text-secondary); font-size: 12px; font-family: inherit;
+  cursor: pointer; outline: none; padding: 2px;
+}
+.sortSelect option { background: #1e2028; }
+
+.filterWrap { position: relative; }
+
+.filterPanel {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 9999;
+  background: var(--bg-secondary); border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow-lg);
+  width: 290px; padding: 14px;
+  animation: scaleIn 0.12s ease-out;
+}
+.filterHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-primary);
+}
+.clearBtn { background: transparent; border: none; color: var(--accent); font-size: 12px; cursor: pointer; }
+.filterSection { margin-bottom: 12px; }
+.filterLabel { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; }
+.ratingRow { display: flex; flex-wrap: wrap; gap: 4px; }
+.ratingBtn {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); color: var(--text-secondary);
+  font-size: 11.5px; font-family: inherit; padding: 4px 9px;
+  cursor: pointer; transition: all 0.12s;
+}
+.extGrid { display: flex; flex-wrap: wrap; gap: 4px; }
+.extBtn {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-secondary);
+  font-size: 10.5px; font-family: inherit; padding: 3px 7px;
+  cursor: pointer; text-transform: uppercase; transition: all 0.12s;
+}
+.ratingBtn:hover, .extBtn:hover { border-color: var(--border-light); color: var(--text-primary); }
+.active { background: var(--accent-dim) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
+
+.searchBox {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 0 8px; height: 28px;
+  min-width: 180px; transition: border-color 0.15s;
+}
+.searchBox:focus-within { border-color: var(--accent); }
+.searchIcon { color: var(--text-muted); flex-shrink: 0; }
+.searchInput { background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 12.5px; flex: 1; }
+.searchInput::placeholder { color: var(--text-muted); }
+.searchClear { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 0; }
+.searchClear:hover { color: var(--text-primary); }

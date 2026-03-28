@@ -1,0 +1,105 @@
+.overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(14px) saturate(120%);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.12s ease-out;
+  padding: 20px; /* #5: breathing room on small screens */
+}
+.modal {
+  display: flex; flex-direction: column;
+  border-radius: 14px;
+  background: rgba(14,16,22,0.97);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+  position: relative;
+  animation: scaleIn 0.13s ease-out;
+  overflow: hidden;
+  max-width: calc(100vw - 40px); /* #5: never exceed viewport */
+  max-height: calc(100vh - 40px);
+}
+.header {
+  height: 42px; padding: 0 10px; flex-shrink: 0;
+  background: rgba(10,12,18,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.assetName { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.hActions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.hBtn {
+  height: 24px; min-width: 26px; padding: 0 5px;
+  border-radius: 4px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09); color: var(--text-secondary);
+  font-size: 12px; font-family: inherit; cursor: pointer; transition: all 0.1s;
+  display: flex; align-items: center; justify-content: center;
+}
+.hBtn:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: var(--accent); }
+.zoomLbl { font-size: 10.5px; color: var(--text-muted); min-width: 34px; text-align: center; }
+.closeBtn { width: 24px; height: 24px; border-radius: 4px; background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center; }
+.closeBtn:hover { background: rgba(224,82,82,0.2); color: #e05252; }
+
+/* Content area */
+.content {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  background: transparent;
+}
+
+/* Image */
+.previewImg { max-width: 100%; max-height: 100%; object-fit: contain; display: block; user-select: none; pointer-events: none; transform-origin: center; }
+
+/* Video */
+.previewVideo { max-width: 100%; max-height: 100%; width: 100%; object-fit: contain; display: block; background: #000; }
+
+/* 3D */
+.model3dMount { position: absolute; inset: 0; cursor: grab; background: repeating-conic-gradient(rgba(255,255,255,0.03) 0% 25%, transparent 0% 50%) 0 0/18px 18px; }
+.model3dMount:active { cursor: grabbing; }
+.model3dHint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: rgba(255,255,255,0.22); background: rgba(0,0,0,0.5); padding: 3px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap; }
+
+/* PDF */
+.pdfWrap { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.pdfObject { flex: 1; width: 100%; border: none; background: #fff; }
+
+/* Text/Code */
+.textPreview { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.truncBanner { padding: 6px 14px; background: rgba(74,158,255,0.12); border-bottom: 1px solid rgba(74,158,255,0.2); font-size: 11px; color: var(--accent); flex-shrink: 0; }
+.truncBanner button { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 11px; }
+.textContent { flex: 1; padding: 16px; overflow: auto; font-size: 12.5px; line-height: 1.65; color: #d4d8e2; white-space: pre-wrap; word-break: break-word; font-family: 'Fira Code','Cascadia Code','Consolas',monospace; margin: 0; }
+.codeContent { font-size: 12px; }
+
+/* Font */
+.fontPreview { position: absolute; inset: 0; overflow-y: auto; padding: 24px; background: #fafafa; color: #111; }
+.fontName { font-size: 13px; color: #888; margin-bottom: 20px; font-family: -apple-system,sans-serif; }
+.fontSample { line-height: 1.2; margin-bottom: 12px; color: #111; }
+.fontGrid { font-size: 14px; line-height: 1.8; color: #333; margin-top: 16px; border-top: 1px solid #ddd; padding-top: 14px; white-space: pre; font-family: inherit; }
+
+/* Audio */
+.audioPreview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px; width: 100%; }
+.audioIcon { font-size: 52px; }
+.audioName { font-size: 13px; color: var(--text-secondary); text-align: center; }
+.audioPlayer { width: 100%; max-width: 340px; }
+
+/* Generic / unsupported */
+.genericPreview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px; }
+.genericIcon { font-size: 56px; }
+.genericExt { font-size: 13px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; }
+.genericName { font-size: 12px; color: var(--text-muted); }
+.openExtBtn { margin-top: 8px; padding: 8px 18px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.openExtBtn:hover { opacity: 0.85; }
+
+/* Shared centre message */
+.centreMsg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px; text-align: center; gap: 8px; pointer-events: none; padding: 20px; }
+.centreMsg small { opacity: 0.6; font-size: 11px; }
+
+/* Nav arrows — outside the modal box */
+.nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.12); color: #fff; font-size: 24px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.nav:hover { background: rgba(74,158,255,0.4); border-color: var(--accent); transform: translateY(-50%) scale(1.1); }
+.prev { left: -50px; }
+.next { right: -50px; }
+/* On small screens, put arrows inside */
+@media (max-width: 900px) {
+  .prev { left: 6px; }
+  .next { right: 6px; }
+}
+.counter { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); font-size: 11px; color: rgba(255,255,255,0.28); background: rgba(0,0,0,0.4); padding: 2px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap; }
