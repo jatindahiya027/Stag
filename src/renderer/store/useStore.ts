@@ -384,41 +384,27 @@ export const useStore = create<Store>((set, get) => ({
     const idSet = new Set(ids)
     const targets = storeAssets.filter(a => idSet.has(a.id))
 
-    // Split into managed (copies/inbox) vs original-location files
-    const managedIds: string[] = []
-    const originalIds: string[] = []
-    for (const asset of targets) {
-      const isManaged = await (api() as any).importCopyIsCopied?.(asset.filePath).catch(() => false)
-      if (isManaged) managedIds.push(asset.id)
-      else originalIds.push(asset.id)
-    }
+    // Always ask the user — never silently delete from disk
+    const msg = ids.length === 1
+      ? `"${targets[0]?.name}.${targets[0]?.ext}"\n\nAlso delete the file from disk? Or just remove it from Stag?`
+      : `${ids.length} files\n\nAlso delete them from disk? Or just remove from Stag?`
+    const choice = await (api() as any).showDeleteDialog?.({ message: msg }).catch(() => null)
 
-    // Remove from UI immediately for all
-    const allIdSet = new Set(ids)
+    // User cancelled — do nothing, keep assets in trash
+    if (choice === null) return
+
+    // Remove from UI
     set(s => ({
-      assets: s.assets.filter(a => !allIdSet.has(a.id)),
-      selectedAssetIds: s.selectedAssetIds.filter(i => !allIdSet.has(i)),
+      assets: s.assets.filter(a => !idSet.has(a.id)),
+      selectedAssetIds: s.selectedAssetIds.filter(i => !idSet.has(i)),
     }))
 
-    // Managed files: delete from disk automatically (they are our copies/inbox files)
-    if (managedIds.length > 0) {
-      api().dbHardDeleteAssets(managedIds).catch(() => {})
-    }
-
-    // Original files: ask the user
-    if (originalIds.length > 0) {
-      const origTargets = targets.filter(t => originalIds.includes(t.id))
-      const msg = originalIds.length === 1
-        ? `"${origTargets[0]?.name}.${origTargets[0]?.ext}" is from its original location.\n\nAlso delete the file from disk? Or just remove it from Stag?`
-        : `${originalIds.length} files are from their original locations.\n\nAlso delete them from disk? Or just remove from Stag?`
-      const choice = await (api() as any).showDeleteDialog?.({ message: msg }).catch(() => null)
-      if (choice === true) {
-        // "Delete from Disk" — remove files AND DB records
-        api().dbHardDeleteAssetsFromDisk(originalIds).catch(() => {})
-      } else {
-        // "Remove from Stag Only" or cancelled — DB records removed, files stay on disk
-        api().dbHardDeleteAssetsDbOnly(originalIds).catch(() => {})
-      }
+    if (choice === true) {
+      // "Delete from Disk" — remove files AND DB records
+      api().dbHardDeleteAssetsFromDisk(ids).catch(() => {})
+    } else {
+      // "Remove from Stag Only" — DB records removed, files stay on disk
+      api().dbHardDeleteAssetsDbOnly(ids).catch(() => {})
     }
 
     get().showToast(`Permanently deleted ${ids.length} item${ids.length !== 1 ? 's' : ''}`, 'error')
