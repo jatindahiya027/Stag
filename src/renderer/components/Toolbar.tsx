@@ -52,7 +52,25 @@ function FilterPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function Toolbar({ folderName, count }: { folderName: string; count: number }) {
+interface ToolbarProps {
+  folderName: string
+  count: number
+  selectedCount?: number
+  inTrash?: boolean
+  onDeselect?: () => void
+  onDelete?: () => void
+  onRestore?: () => void
+  onPermanentDelete?: () => void
+  onReAiTag?: () => void
+  onSearchReady?: (focusFn: () => void) => void
+}
+
+export default function Toolbar({
+  folderName, count,
+  selectedCount = 0, inTrash = false,
+  onDeselect, onDelete, onRestore, onPermanentDelete, onReAiTag,
+  onSearchReady,
+}: ToolbarProps) {
   const {
     thumbnailSize, setThumbnailSize,
     searchQuery, setSearchQuery,
@@ -63,6 +81,18 @@ export default function Toolbar({ folderName, count }: { folderName: string; cou
   } = useStore()
   const [showFilter, setShowFilter] = useState(false)
   const hasFilters = filterRating > 0 || filterExts.length > 0
+  const hasSelection = selectedCount > 0
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // Expose focus function to parent via callback once mounted
+  useEffect(() => {
+    if (onSearchReady) {
+      onSearchReady(() => {
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      })
+    }
+  }, [onSearchReady])
 
   const handleImport = async () => {
     const paths: string[] = await (window as any).electronAPI?.openFiles() || []
@@ -88,62 +118,89 @@ export default function Toolbar({ folderName, count }: { folderName: string; cou
         </div>
 
         <div className={styles.right}>
-        <div className={styles.sizeSlider}>
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" style={{ color: 'var(--text-muted)' }}>
-            <rect x="0" y="3.5" width="4" height="4" rx="0.5"/>
-            <rect x="6" y="1" width="5" height="9" rx="0.5" opacity="0.5"/>
-          </svg>
-          <input type="range" min="80" max="320" value={thumbnailSize}
-            onChange={e => setThumbnailSize(Number(e.target.value))}
-            className={styles.slider} />
-        </div>
-
-        <button className={styles.importBtn} onClick={handleImport} disabled={isLoading}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 1v7M3 6l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M1 10h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          Import
-        </button>
-
-        <button className={styles.iconBtn} onClick={toggleSortDir} title="Toggle sort direction">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            {sortDir === 'desc'
-              ? <path d="M2 3h9M2 6.5h6M2 10h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-              : <path d="M2 10h9M2 6.5h6M2 3h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>}
-          </svg>
-        </button>
-
-        <select className={styles.sortSelect} value={sortBy}
-          onChange={e => setSortBy(e.target.value as any)}>
-          <option value="date">Date added</option>
-          <option value="name">Name</option>
-          <option value="size">Size</option>
-          <option value="rating">Rating</option>
-        </select>
-
-        <div className={styles.filterWrap}>
-          <button className={`${styles.iconBtn} ${hasFilters ? styles.activeBtn : ''}`}
-            onClick={() => setShowFilter(!showFilter)} title="Filters">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M1.5 3h10L8 7.5v4L5 10V7.5L1.5 3z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
-                fill={hasFilters ? 'currentColor' : 'none'} fillOpacity="0.2"/>
+          {/* ── Always-visible controls ── */}
+          <div className={styles.sizeSlider}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" style={{ color: 'var(--text-muted)' }}>
+              <rect x="0" y="3.5" width="4" height="4" rx="0.5"/>
+              <rect x="6" y="1" width="5" height="9" rx="0.5" opacity="0.5"/>
             </svg>
-            {hasFilters && <span className={styles.filterDot} />}
-          </button>
-          {showFilter && <FilterPanel onClose={() => setShowFilter(false)} />}
-        </div>
+            <input type="range" min="80" max="320" value={thumbnailSize}
+              onChange={e => setThumbnailSize(Number(e.target.value))}
+              className={styles.slider} />
+          </div>
 
-        <div className={styles.searchBox}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={styles.searchIcon}>
-            <circle cx="5.5" cy="5.5" r="3.5" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M8 8l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-          </svg>
-          <input className={styles.searchInput} placeholder="Search name, tags…"
-            value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-          {searchQuery && <button className={styles.searchClear} onClick={() => setSearchQuery('')}>×</button>}
+          <button className={styles.importBtn} onClick={handleImport} disabled={isLoading}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1v7M3 6l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M1 10h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Import
+          </button>
+
+          <button className={styles.iconBtn} onClick={toggleSortDir} title="Toggle sort direction">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              {sortDir === 'desc'
+                ? <path d="M2 3h9M2 6.5h6M2 10h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                : <path d="M2 10h9M2 6.5h6M2 3h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>}
+            </svg>
+          </button>
+
+          <select className={styles.sortSelect} value={sortBy}
+            onChange={e => setSortBy(e.target.value as any)}>
+            <option value="date">Date added</option>
+            <option value="name">Name</option>
+            <option value="size">Size</option>
+            <option value="rating">Rating</option>
+          </select>
+
+          <div className={styles.filterWrap}>
+            <button className={`${styles.iconBtn} ${hasFilters ? styles.activeBtn : ''}`}
+              onClick={() => setShowFilter(!showFilter)} title="Filters">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M1.5 3h10L8 7.5v4L5 10V7.5L1.5 3z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+                  fill={hasFilters ? 'currentColor' : 'none'} fillOpacity="0.2"/>
+              </svg>
+              {hasFilters && <span className={styles.filterDot} />}
+            </button>
+            {showFilter && <FilterPanel onClose={() => setShowFilter(false)} />}
+          </div>
+
+          <div className={styles.searchBox}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={styles.searchIcon}>
+              <circle cx="5.5" cy="5.5" r="3.5" stroke="currentColor" strokeWidth="1.3"/>
+              <path d="M8 8l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+            <input ref={searchRef} className={styles.searchInput} placeholder="Search name, tags…"
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            {searchQuery && <button className={styles.searchClear} onClick={() => setSearchQuery('')}>×</button>}
+          </div>
+
+          {/* ── Selection actions — appended after normal controls when something is selected ── */}
+          {hasSelection && (
+            <>
+              <div className={styles.selectionDivider} />
+              <span className={styles.selectionCount}>{selectedCount} selected</span>
+              {inTrash ? (
+                <>
+                  <button className={styles.selectionBtn} onClick={onRestore}>↩ Restore</button>
+                  <button className={`${styles.selectionBtn} ${styles.selectionDanger}`} onClick={onPermanentDelete}>
+                    🗑 Delete permanently
+                  </button>
+                </>
+              ) : (
+                <button className={`${styles.selectionBtn} ${styles.selectionDanger}`} onClick={onDelete}>
+                  🗑 Trash{selectedCount > 1 ? ` (${selectedCount})` : ''}
+                </button>
+              )}
+              {!inTrash && onReAiTag && (
+                <button className={styles.selectionBtn} onClick={onReAiTag} title="Re-run AI captioning and tagging">
+                  🤖 Re-tag
+                </button>
+              )}
+              <button className={styles.selectionBtnGhost} onClick={onDeselect}>✕</button>
+            </>
+          )}
         </div>
-      </div>
       </div>{/* end toolbarMain */}
 
       {/* Progress — own row below toolbar, never overlaps buttons */}

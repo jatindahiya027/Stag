@@ -223,7 +223,7 @@ function writeRelations(asset) {
 function dbLoadAll() {
   if (!_db) return { assets: [], folders: [], tags: [], smartFolders: [] }
   try {
-    const assetRows = dbAll('SELECT * FROM assets WHERE deleted=0 ORDER BY importTime DESC')
+    const assetRows = dbAll('SELECT * FROM assets ORDER BY importTime DESC')
     const allTags   = dbAll('SELECT assetId, tag FROM asset_tags')
     const allFolds  = dbAll('SELECT assetId, folderId FROM asset_folders')
     const allColors = dbAll('SELECT assetId, hex, ratio FROM asset_colors ORDER BY assetId, sortOrder')
@@ -1869,10 +1869,26 @@ ipcMain.handle('ollama:tagImage', async (_ev, filePath, model, baseUrl) => {
   const url = normalizeOllamaUrl(baseUrl)
   if (isDev) console.log(`[Ollama] Tagging: ${path.basename(filePath)} model=${model}`)
 
+  const SIZE_LIMIT = 9 * 1024 * 1024  // 9 MB
+  const MAX_DIM    = 1920              // longest edge for 1080p (1920x1080)
+
   let imageBase64
   try {
     const buf = await fs.promises.readFile(filePath)
-    imageBase64 = buf.toString('base64')
+    if (buf.length > SIZE_LIMIT) {
+      if (isDev) console.log(`[Ollama] Image too large (${(buf.length / 1024 / 1024).toFixed(1)} MB), resizing to max ${MAX_DIM}px…`)
+      const { nativeImage } = require('electron')
+      const img = nativeImage.createFromBuffer(buf)
+      const { width, height } = img.getSize()
+      const scale   = Math.min(MAX_DIM / width, MAX_DIM / height, 1)
+      const newW    = Math.round(width  * scale)
+      const newH    = Math.round(height * scale)
+      const resized = img.resize({ width: newW, height: newH, quality: 'good' })
+      imageBase64   = resized.toJPEG(88).toString('base64')
+      if (isDev) console.log(`[Ollama] Resized ${width}x${height} → ${newW}x${newH}`)
+    } else {
+      imageBase64 = buf.toString('base64')
+    }
   } catch (e) {
     return { ok: false, error: `Cannot read file: ${e.message}`, fatal: false }
   }

@@ -32,9 +32,21 @@ export default function App() {
       try {
         const saved = await (window as any).electronAPI?.dbLoad()
         if (saved?.assets?.length)       setAssets(saved.assets)
-        if (saved?.folders?.length)      setFolders(saved.folders)
         if (saved?.tags?.length)         setTags(saved.tags)
         if (saved?.smartFolders?.length) setSmartFolders(saved.smartFolders)
+
+        // Folders: if the DB has any rows use them as the source of truth.
+        // If the DB has none (fresh install), seed the in-memory defaults into
+        // the DB so future deletes actually persist.
+        if (saved?.folders?.length) {
+          setFolders(saved.folders)
+        } else {
+          // First launch — write defaults to DB so deletes stick from now on
+          const defaults = useStore.getState().folders
+          for (const f of defaults) {
+            await (window as any).electronAPI?.dbUpsertFolder(f).catch(() => {})
+          }
+        }
 
         // Enqueue background thumbnail generation for any video/3D assets
         // that don't yet have a thumbnail (e.g. from a previous session that
@@ -153,10 +165,12 @@ export default function App() {
         `📥 ${newAssets.length} image${newAssets.length !== 1 ? 's' : ''} added from browser`,
         'success'
       )
-      // Start AI tagging for newly grabbed images if AI is enabled
+      // Start AI tagging for newly grabbed images if AI is enabled.
+      // startAiQueue handles the "already running" case internally — it appends
+      // to the shared pending queue so no images are ever dropped.
       if (freshAssets.length > 0) {
-        const { aiSettings, ollamaSessionFailed, aiProgress } = useStore.getState()
-        if (aiSettings.enabled && !ollamaSessionFailed && !aiProgress?.active) {
+        const { aiSettings, ollamaSessionFailed } = useStore.getState()
+        if (aiSettings.enabled && !ollamaSessionFailed) {
           const newImages = freshAssets.filter(a => isImage(a.ext))
           if (newImages.length > 0) {
             setTimeout(() => useStore.getState().startAiQueue(newImages), 800)
@@ -221,11 +235,15 @@ export default function App() {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       const s = useStore.getState()
-      const { selectedAssetIds, deleteAssets, clearSelection, selectAll,
-              assets, setLightboxAsset, lightboxAsset, filteredAssetIds } = s
+      const { selectedAssetIds, deleteAssets, permanentDeleteWithPrompt, clearSelection, selectAll,
+              assets, setLightboxAsset, lightboxAsset, filteredAssetIds, activeFolderType } = s
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedAssetIds.length > 0) {
-        deleteAssets(selectedAssetIds)
+        if (activeFolderType === 'trash') {
+          permanentDeleteWithPrompt(selectedAssetIds)
+        } else {
+          deleteAssets(selectedAssetIds)
+        }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault(); selectAll(filteredAssetIds)

@@ -170,8 +170,11 @@ const DEFAULT_FOLDERS: Folder[] = [
   { id: 'tutorials',      name: 'Tutorials',      parentId: null,           color: '#ff922b', icon: '📚', autoTags: [], sortOrder: 3 },
 ]
 
+// Shared pending queue — lives outside the store so the async loop can mutate it without triggering re-renders
+const _aiPendingQueue: Asset[] = []
+
 export const useStore = create<Store>((set, get) => ({
-  assets: [], folders: DEFAULT_FOLDERS,
+  assets: [], folders: [],
   smartFolders: [
     { id: 'sf-1', name: 'High Rated (4+)', rules: [{ field: 'rating', operator: 'gte', value: 4 }], logic: 'ALL' },
     { id: 'sf-2', name: 'Untagged',        rules: [{ field: 'tags',   operator: 'is',  value: '' }], logic: 'ALL' },
@@ -339,9 +342,10 @@ export const useStore = create<Store>((set, get) => ({
     const copiedNote = settings?.importCopyEnabled && settings?.importCopyPath ? ' (copied to library)' : ''
     get().showToast(`Imported ${importedAssets.length} file${importedAssets.length !== 1 ? 's' : ''}${copiedNote}`, 'success')
 
-    // Start AI tagging queue for newly imported images (if enabled)
-    const { aiSettings, ollamaSessionFailed, aiProgress } = get()
-    if (aiSettings.enabled && !ollamaSessionFailed && !aiProgress?.active) {
+    // Start AI tagging queue for newly imported images (if enabled).
+    // startAiQueue handles the "already running" case — safe to call unconditionally.
+    const { aiSettings, ollamaSessionFailed } = get()
+    if (aiSettings.enabled && !ollamaSessionFailed) {
       const newImages = importedAssets.filter(a => isImage(a.ext))
       if (newImages.length > 0) {
         if ((window as any).__DEV__) console.log(`[AI] Queuing ${newImages.length} new images for tagging`)
@@ -539,22 +543,37 @@ export const useStore = create<Store>((set, get) => ({
     const { aiSettings, ollamaSessionFailed } = get()
     if (!aiSettings.enabled || ollamaSessionFailed) return
 
-    set({ aiProgress: { total: imagesToTag.length, done: 0, current: '', active: true }, _aiStopped: false })
+    // Push new images into the shared pending queue (dedup by id)
+    const existingIds = new Set(_aiPendingQueue.map(a => a.id))
+    for (const a of imagesToTag) {
+      if (!existingIds.has(a.id)) { _aiPendingQueue.push(a); existingIds.add(a.id) }
+    }
 
-    if (isDev) console.log(`[AI] Starting queue: ${imagesToTag.length} images, model: ${aiSettings.model}`)
+    // If the loop is already running, it will naturally drain the new items — don't start a second loop
+    if (get().aiProgress?.active) {
+      if (isDev) console.log(`[AI] Queue already running — appended ${imagesToTag.length} image(s), total pending: ${_aiPendingQueue.length}`)
+      // Update the total count so the progress indicator reflects the full queue
+      set(st => ({ aiProgress: st.aiProgress ? { ...st.aiProgress, total: st.aiProgress.done + _aiPendingQueue.length } : null }))
+      return
+    }
 
-    // Run async, one at a time
+    set({ aiProgress: { total: _aiPendingQueue.length, done: 0, current: '', active: true }, _aiStopped: false })
+    if (isDev) console.log(`[AI] Starting queue: ${_aiPendingQueue.length} images, model: ${aiSettings.model}`)
+
+    // Run async, one at a time — drains _aiPendingQueue which may grow while running
     ;(async () => {
       let done = 0
-      for (const asset of imagesToTag) {
+      while (_aiPendingQueue.length > 0) {
         const { aiSettings: s, ollamaSessionFailed: failed, _aiStopped: stopped } = get()
         if (!s.enabled || failed || stopped) {
           if (isDev) console.log('[AI] Queue stopped (disabled or session failed)')
+          _aiPendingQueue.length = 0
           break
         }
-        set(st => ({ aiProgress: st.aiProgress ? { ...st.aiProgress, current: `${asset.name}.${asset.ext}`, active: true } : null }))
+        const asset = _aiPendingQueue.shift()!
+        set(st => ({ aiProgress: st.aiProgress ? { ...st.aiProgress, current: `${asset.name}.${asset.ext}`, active: true, total: done + _aiPendingQueue.length + 1 } : null }))
         try {
-          if (isDev) console.log(`[AI] Processing ${asset.name}.${asset.ext} (${done + 1}/${imagesToTag.length})`)
+          if (isDev) console.log(`[AI] Processing ${asset.name}.${asset.ext} — ${_aiPendingQueue.length} remaining`)
           const result = await api().ollamaTagImage(asset.filePath, s.model, s.ollamaUrl)
 
           if (!result.ok) {
@@ -563,6 +582,7 @@ export const useStore = create<Store>((set, get) => ({
               // Connection down — stop entire session
               set({ ollamaSessionFailed: true })
               if (isDev) console.log('[AI] Session failed — stopping queue')
+              _aiPendingQueue.length = 0
               break
             }
             // Non-fatal (bad JSON, model error, unreadable file) — skip, continue
@@ -595,11 +615,11 @@ export const useStore = create<Store>((set, get) => ({
           if (isDev) console.log(`[AI] Unexpected error on ${asset.name}: ${msg}`)
           done++
         }
-        set(st => ({ aiProgress: st.aiProgress ? { ...st.aiProgress, done, total: imagesToTag.length } : null }))
+        set(st => ({ aiProgress: st.aiProgress ? { ...st.aiProgress, done, total: done + _aiPendingQueue.length } : null }))
         await new Promise(r => setTimeout(r, 100))  // small yield between images
       }
       set({ aiProgress: null })
-      if (isDev) console.log(`[AI] Queue complete. Processed: ${done}/${imagesToTag.length}`)
+      if (isDev) console.log(`[AI] Queue complete. Processed: ${done}`)
     })()
   },
 

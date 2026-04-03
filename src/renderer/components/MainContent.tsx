@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore'
 import Toolbar from './Toolbar'
 import AssetGrid from './AssetGrid'
 import { Asset } from '../types'
+import { isImage } from '../utils/helpers'
 import styles from './MainContent.module.css'
 
 function matchSmart(asset: Asset, rules: any[], logic: 'ANY' | 'ALL'): boolean {
@@ -37,6 +38,7 @@ export default function MainContent({ dbReady }: Props) {
     filterRating, filterExts,
     thumbnailSize, viewMode,
     selectedAssetIds, deleteAssets, restoreAssets, permanentDelete, permanentDeleteWithPrompt,
+    startAiQueue, aiSettings, ollamaSessionFailed,
     setFilteredAssetIds,
   } = useStore()
 
@@ -98,35 +100,43 @@ export default function MainContent({ dbReady }: Props) {
   useEffect(() => { setFilteredAssetIds(filteredAssets.map(a => a.id)) }, [filteredAssets])
 
   const inTrash = activeFolderType === 'trash'
-  const hasSelection = selectedAssetIds.length > 0
+
+  // Ctrl+F / Cmd+F → focus search input inside Toolbar
+  const focusSearchRef = useRef<(() => void) | null>(null)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        focusSearchRef.current?.()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className={styles.main}>
-      <Toolbar folderName={folderName} count={filteredAssets.length} />
-
-      {/* Action bar — OVERLAY so it never shifts layout */}
-      {hasSelection && (
-        <div className={styles.actionBar}>
-          <span className={styles.actionCount}>{selectedAssetIds.length} selected</span>
-          <div className={styles.actionBtns}>
-            {inTrash ? (
-              <>
-                <button className={styles.actionBtn} onClick={() => restoreAssets(selectedAssetIds)}>↩ Restore</button>
-                <button className={`${styles.actionBtn} ${styles.danger}`}
-                  onClick={() => { if (confirm('Permanently delete? This cannot be undone.')) permanentDeleteWithPrompt(selectedAssetIds) }}>
-                  🗑 Delete permanently
-                </button>
-              </>
-            ) : (
-              <button className={`${styles.actionBtn} ${styles.danger}`}
-                onClick={() => deleteAssets(selectedAssetIds)}>
-                🗑 Move to Trash{selectedAssetIds.length > 1 ? ` (${selectedAssetIds.length})` : ''}
-              </button>
-            )}
-            <button className={styles.actionBtn} onClick={() => useStore.getState().clearSelection()}>✕ Deselect</button>
-          </div>
-        </div>
-      )}
+      <Toolbar
+        onSearchReady={(fn) => { focusSearchRef.current = fn }}
+        folderName={folderName}
+        count={filteredAssets.length}
+        selectedCount={selectedAssetIds.length}
+        inTrash={inTrash}
+        onDeselect={() => useStore.getState().clearSelection()}
+        onDelete={() => deleteAssets(selectedAssetIds)}
+        onRestore={() => restoreAssets(selectedAssetIds)}
+        onPermanentDelete={() => { if (confirm('Permanently delete? This cannot be undone.')) permanentDeleteWithPrompt(selectedAssetIds) }}
+        onReAiTag={() => {
+          const imageAssets = selectedAssetIds
+            .map(id => useStore.getState().assets.find(a => a.id === id))
+            .filter((a): a is Asset => !!a && isImage(a.ext))
+          if (!imageAssets.length) return
+          if (!aiSettings.enabled) { useStore.getState().showToast('Enable AI tagging in Settings first', 'error'); return }
+          if (ollamaSessionFailed) { useStore.getState().showToast('Ollama connection failed this session — restart app to retry', 'error'); return }
+          startAiQueue(imageAssets)
+          useStore.getState().showToast(`🤖 Re-tagging ${imageAssets.length} image${imageAssets.length > 1 ? 's' : ''}…`, 'info')
+        }}
+      />
 
       {/* Grid — always rendered, skeleton when loading */}
       {!dbReady ? (

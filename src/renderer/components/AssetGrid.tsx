@@ -159,7 +159,9 @@ const LazyImage = memo(({ src, alt }: { src: string; alt: string }) => {
 
 // ── Context menu ──────────────────────────────────────────────────────────────
 const CtxMenu = memo(({ x, y, asset, selCount, selIds, onClose }: any) => {
-  const { deleteAssets, setLightboxAsset } = useStore()
+  const { deleteAssets, setLightboxAsset, restoreAssets, permanentDeleteWithPrompt, activeFolderType } = useStore()
+  const inTrash = activeFolderType === 'trash'
+  const ids = selCount > 1 ? selIds : [asset.id]
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{x:number;y:number}|null>(null)
   useEffect(() => {
@@ -173,16 +175,24 @@ const CtxMenu = memo(({ x, y, asset, selCount, selIds, onClose }: any) => {
   }, [])
   return (
     <div className={styles.ctxMenu} ref={ref} style={{ left: pos?.x??x, top: pos?.y??y, visibility: pos?'visible':'hidden' }}>
-      {selCount <= 1 && <>
+      {!inTrash && selCount <= 1 && <>
         <button className={styles.ctxItem} onClick={() => { setLightboxAsset(asset); onClose() }}>🔍 Preview</button>
         <button className={styles.ctxItem} onClick={() => { (window as any).electronAPI?.openPath(asset.filePath); onClose() }}>↗ Open in app</button>
         <button className={styles.ctxItem} onClick={() => { (window as any).electronAPI?.showInFolder(asset.filePath); onClose() }}>📂 Show in folder</button>
         <div className={styles.ctxDiv} />
       </>}
-      <button className={`${styles.ctxItem} ${styles.ctxDanger}`}
-        onClick={() => { deleteAssets(selCount>1?selIds:[asset.id]); onClose() }}>
-        🗑 Trash{selCount>1?` (${selCount})`:''}
-      </button>
+      {inTrash ? <>
+        <button className={styles.ctxItem} onClick={() => { restoreAssets(ids); onClose() }}>↩ Restore</button>
+        <button className={`${styles.ctxItem} ${styles.ctxDanger}`}
+          onClick={() => { permanentDeleteWithPrompt(ids); onClose() }}>
+          🗑 Delete permanently{selCount>1?` (${selCount})`:''}
+        </button>
+      </> : (
+        <button className={`${styles.ctxItem} ${styles.ctxDanger}`}
+          onClick={() => { deleteAssets(ids); onClose() }}>
+          🗑 Trash{selCount>1?` (${selCount})`:''}
+        </button>
+      )}
     </div>
   )
 })
