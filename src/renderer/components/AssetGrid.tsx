@@ -212,15 +212,21 @@ function cardH(a: Asset, w: number) {
 }
 interface LI { asset: Asset; x: number; y: number; w: number; h: number }
 function computeLayout(assets: Asset[], cw: number, gap: number, cW: number) {
-  if (cW < 10 || cw < 10) return { items: [] as LI[], totalH: 0 }
+  if (cW < 10 || cw < 10) return { items: [] as LI[], totalH: 0, cols: 1, colStep: cw + gap }
   const cols = Math.max(1, Math.floor((cW+gap)/(cw+gap)))
-  const hs = new Array(cols).fill(0)
+  const colStep = cw + gap
+  const hs = new Array(cols).fill(0)   // current top of each column
   const items: LI[] = []
-  for (const a of assets) {
-    const col = hs.indexOf(Math.min(...hs)); const h = cardH(a, cw)
-    items.push({ asset:a, x:col*(cw+gap), y:hs[col], w:cw, h }); hs[col] += h+gap
+  for (let i = 0; i < assets.length; i++) {
+    // Strict left-to-right round-robin: asset i always goes into column (i % cols).
+    // This preserves import order in visual reading order (left→right, top→bottom)
+    // so arrow-key navigation and selection always match what the user sees.
+    const col = i % cols
+    const h = cardH(assets[i], cw)
+    items.push({ asset: assets[i], x: col * colStep, y: hs[col], w: cw, h })
+    hs[col] += h + gap
   }
-  return { items, totalH: Math.max(0, Math.max(...hs)-gap+10) }
+  return { items, totalH: Math.max(0, Math.max(...hs) - gap + 10), cols, colStep }
 }
 
 // ── Pick which thumb to show ──────────────────────────────────────────────────
@@ -480,10 +486,78 @@ export default function AssetGrid({ assets, thumbnailSize }: { assets: Asset[]; 
   }, [assets.length])
 
   const GAP = 8
-  const { items, totalH } = useMemo(() => computeLayout(assets, thumbnailSize, GAP, contW), [assets, thumbnailSize, contW])
+  const { items, totalH, cols: layoutCols, colStep: layoutColStep } = useMemo(() => computeLayout(assets, thumbnailSize, GAP, contW), [assets, thumbnailSize, contW])
   const itemsRef = useRef(items)
+  const layoutColsRef = useRef(layoutCols)
+  const layoutColStepRef = useRef(layoutColStep)
   useEffect(() => { itemsRef.current = items }, [items])
+  useEffect(() => { layoutColsRef.current = layoutCols; layoutColStepRef.current = layoutColStep }, [layoutCols, layoutColStep])
   const visible = useMemo(() => { const t=scrollY.current-600, b=scrollY.current+viewH+600; return items.filter(i=>i.y+i.h>t&&i.y<b) }, [items, viewH, scrollY.current])
+
+  // Arrow-key navigation — column-aware masonry navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(e.key)) return
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const { selectedAssetIds, lightboxAsset } = useStore.getState()
+      if (lightboxAsset || selectedAssetIds.length !== 1) return
+
+      const layout = itemsRef.current
+      if (!layout.length) return
+
+      const curId   = selectedAssetIds[0]
+      const curItem = layout.find(i => i.asset.id === curId)
+      if (!curItem) return
+
+      e.preventDefault()
+
+      const colStep = layoutColStepRef.current
+      const numCols = layoutColsRef.current
+      const colOf   = (item: typeof layout[0]) => Math.round(item.x / colStep)
+      const curCol  = colOf(curItem)
+      const sameCol = (item: typeof layout[0]) => colOf(item) === curCol
+
+      if (e.key === 'ArrowDown') {
+        // Same column, first card below current
+        const pool = layout
+          .filter(i => i.asset.id !== curId && sameCol(i) && i.y > curItem.y + curItem.h - 1)
+          .sort((a, b) => a.y - b.y)
+        const best = pool[0]
+        if (best) { useStore.getState().setSelectedAssetIds([best.asset.id]); document.getElementById(`asset-${best.asset.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }
+        return
+      }
+
+      if (e.key === 'ArrowUp') {
+        // Same column, first card above current
+        const pool = layout
+          .filter(i => i.asset.id !== curId && sameCol(i) && (i.y + i.h) < curItem.y + 1)
+          .sort((a, b) => (b.y + b.h) - (a.y + a.h))
+        const best = pool[0]
+        if (best) { useStore.getState().setSelectedAssetIds([best.asset.id]); document.getElementById(`asset-${best.asset.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }
+        return
+      }
+
+      // Left / Right — reading-order navigation with row wrapping.
+      // Since computeLayout now uses strict round-robin (asset[i] → col i%cols),
+      // the layout array IS already in reading order — no re-sorting needed.
+      const readingOrder = layout   // array order = visual left→right, top→bottom
+
+      const curIdx = readingOrder.findIndex(i => i.asset.id === curId)
+      if (curIdx === -1) return
+
+      const targetIdx = e.key === 'ArrowRight'
+        ? (curIdx + 1 < readingOrder.length ? curIdx + 1 : -1)
+        : (curIdx - 1 >= 0 ? curIdx - 1 : -1)
+
+      if (targetIdx === -1) return   // at absolute start/end of the grid
+
+      const best = readingOrder[targetIdx]
+      useStore.getState().setSelectedAssetIds([best.asset.id])
+      document.getElementById(`asset-${best.asset.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const handleClick = useCallback((id: string, shift: boolean, ctrl: boolean) => {
     // Always use latest ordered list via ref (avoids stale closure)

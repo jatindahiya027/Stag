@@ -270,27 +270,7 @@ export default function App() {
         }
         return
       }
-      // Grid arrow nav
-      if (['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].includes(e.key)) {
-        e.preventDefault()
-        if (filteredAssetIds.length === 0) return
-        if (selectedAssetIds.length === 0) {
-          s.setSelectedAssetIds([filteredAssetIds[0]]); return
-        }
-        if (selectedAssetIds.length === 1) {
-          const idx = filteredAssetIds.indexOf(selectedAssetIds[0])
-          const colW = s.thumbnailSize + 8
-          const cols = Math.max(1, Math.floor((window.innerWidth - 500) / colW))
-          let next = idx
-          if (e.key === 'ArrowRight') next = idx + 1
-          if (e.key === 'ArrowLeft')  next = idx - 1
-          if (e.key === 'ArrowDown')  next = idx + cols
-          if (e.key === 'ArrowUp')    next = idx - cols
-          next = Math.max(0, Math.min(filteredAssetIds.length - 1, next))
-          s.setSelectedAssetIds([filteredAssetIds[next]])
-          document.getElementById(`asset-${filteredAssetIds[next]}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-        }
-      }
+      // Arrow-key grid navigation is handled inside AssetGrid (position-aware masonry nav)
       if (e.key === 'Enter' && selectedAssetIds.length === 1) {
         const a = assets.find(x => x.id === selectedAssetIds[0])
         if (a) (window as any).electronAPI?.openPath(a.filePath)
