@@ -1,0 +1,6 @@
+faiss-cpu>=1.8.0,<2
+numpy>=1.24,<3
+Pillow>=10,<13
+torch>=2.2,<3
+torchvision>=0.17,<1
+transformers>=4.56,<5

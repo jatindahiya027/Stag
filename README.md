@@ -1,428 +1,259 @@
-# 🦌 Stag — Design Asset Manager
+# Stag
 
-> A pixel-perfect desktop app for organizing, browsing, and managing your design assets — built with **Electron + React + TypeScript**.
+Stag is a local-first desktop asset manager for organizing, previewing, searching, and enriching creative files. It is built with Electron, React, TypeScript, Zustand, Vite, SQLite, and optional local AI services.
 
-Stag is an [Eagle](https://en.eagle.cool/)-inspired design asset manager that runs natively on **Windows 10+**, **macOS 10.15+**, and **Linux**. It stores everything locally — no subscription, no cloud required.
+Stag keeps the library database, thumbnails, settings, downloaded runtimes, and AI indexes on the user's computer. It does not require a hosted Stag backend.
 
----
+## Capabilities
 
-## ✨ Features
+- Import local files by picker or drag and drop.
+- Optionally copy imported files into a managed library folder.
+- Capture websites and receive files from compatible web-grab integrations.
+- Generate thumbnails for images, documents, video, 3D files, fonts, and design formats.
+- Preview images, video, audio, PDF, EPUB, text, fonts, websites, and 3D models.
+- Organize assets with nested folders, tags, ratings, notes, colors, and annotations.
+- Search names, descriptions, extensions, and tags using SQLite FTS and filters.
+- Browse masonry, justified, grid, and list layouts.
+- Use Trash, Recently Used, Random, Uncategorized, Untagged, and smart folders.
+- Hide assets carrying configured sensitive tags.
+- Run local Ollama auto-tagging.
+- Run TIPSv2 text-to-image search and DINOv3 image-similarity search.
+- Download Stag's private Python and media runtime during first-run onboarding.
 
-### Core UI
-- Dark theme with fully customizable background and accent colors
-- Three-panel layout: **Sidebar** / **Asset Grid** / **Inspector**
-- macOS-style traffic light buttons (close / minimize / maximize)
-- Custom frameless window with native title bar integration
-- Resizable thumbnail grid with a size slider
-- Collapsible sidebar and inspector panels
-- Toast notification system
+See [Feature Guide](docs/FEATURES.md) for the complete user-facing behavior.
 
-### Sidebar
-- Library sections: All, Uncategorized, Untagged, All Tags, Trash
-- Hierarchical folder tree with expand / collapse
-- Folder color icons and asset counts per folder
-- Smart Folders with rule-based auto-filtering
-- Inline filter bar for quick folder search
+## Technology
 
-### Asset Grid
-- Grid, list, and masonry view modes
-- Configurable thumbnail size
-- File type badge (PSD, JPG, PNG, etc.) with color coding
-- Star rating badge on thumbnails
-- Multi-select with Ctrl / Cmd + Click
-- Drag-and-drop file import from the OS
-- Full-text search (name, tags, notes, extension)
-- Sort by: date, name, file size, rating
-- Filter by rating and file extension
+| Area | Implementation |
+| --- | --- |
+| Desktop shell | Electron 41 |
+| Renderer | React 19 + TypeScript 6 + Vite 8 |
+| State | Zustand |
+| Database | `better-sqlite3`, WAL mode, FTS5 |
+| Images | Sharp, ImageMagick, Ghostscript, Poppler |
+| Video | FFmpeg, FFprobe, Chromium, `mpegts.js` |
+| 3D | Three.js loaded by the preview runtime |
+| AI search | Python, PyTorch, Transformers, FAISS |
+| AI tagging | Ollama HTTP API |
+| Packaging | electron-builder |
+| Logging | Pino with rotating files |
 
-### Inspector Panel
-- Asset preview with dominant color extraction
-- Color palette swatches (up to 5 dominant colors)
-- Inline editable asset name
-- Notes textarea
-- URL field
-- Tag chips (add / remove)
-- Folder assignment chips
-- 5-star rating (hover + click)
-- Full file metadata: dimensions, size, type, import date, modified date
-- Export / Show in Finder button
+## Developer Setup
 
-### Supported File Types
+### Requirements
 
-| Category | Extensions |
-|---|---|
-| Images | JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF, HEIC, HEIF, SVG |
-| RAW Photos | RAW, CR2, NEF |
-| Video | MP4, WEBM, MOV, AVI, MKV, TS, MTS, M2TS, MPG, MPEG, FLV, WMV, M4V, RMVB, 3GP |
-| Audio | MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, WMA |
-| 3D Models | GLB, GLTF, OBJ, FBX, DAE, STL, BLEND |
-| Design | PSD, AI, FIG, SKETCH, XD |
-| Documents | PDF |
-| Fonts | TTF, OTF, WOFF, WOFF2 |
+- Node.js 22 LTS or newer.
+- npm.
+- Git.
+- Python 3 only for the repository's Python unit test. The running app downloads and uses its own private Python runtime.
+- macOS or Windows for supported desktop builds.
 
-### Thumbnail Engine
-- Background thumbnail generation runs independently of component visibility
-- **Images**: base64 data URL via native Electron, compressed to max 600px JPEG at 0.88 quality
-- **Videos**: frame extracted at 10% of duration using an off-screen `<video>` element
-- **3D models**: rendered via Three.js WebGL in an off-screen canvas (GLB, GLTF, OBJ, STL, DAE, FBX)
-- **Audio**: animated waveform placeholder with inline playback toggle
-- Concurrency-controlled queues: 2 simultaneous video jobs, 1 WebGL context at a time
-- Thumbnails are saved to disk and persist across sessions
+On Windows, install Visual Studio Build Tools with the Desktop development with C++ workload if a native prebuild is unavailable. On macOS, install Xcode Command Line Tools.
 
-### Smart Folders
-Smart Folders automatically filter assets based on configurable rules:
-
-| Rule Field | Operators |
-|---|---|
-| Tags | `contains`, `is empty` |
-| Name | `contains` |
-| Extension | `is` |
-| Rating | `≥` / `≤` |
-| Color | `similar` |
-
-Rules can be combined with **ANY** (OR) or **ALL** (AND) logic.
-
-### Persistence
-- SQLite-based database via `sql.js` — zero native modules, works on any platform
-- Granular IPC operations: insert, update, batch-update, hard-delete
-- Thumbnails saved as separate files and referenced by URL
-- Settings (theme, library path, performance, AI) persisted across sessions
-- Soft-delete / Trash with hard-delete support
-- Automatic library path migration
-
-### AI Tagging (Ollama Integration)
-- Optional local AI image tagging using [Ollama](https://ollama.ai/)
-- Configurable server URL (`http://localhost:11434` by default)
-- Model selection (e.g., `llava`, `llava:13b`)
-- Generates AI descriptions and tags stored per asset
-- Live progress indicator during batch AI tagging
-
-### Appearance Customization
-- Custom background color with auto-derived panel shades
-- Custom accent color
-- Glass/blur effect with adjustable opacity and blur strength
-- Theme applied in real-time via CSS custom properties
-
-### File Operations
-- Drag-and-drop import from OS
-- Multi-file picker dialog
-- Folder import (recursive scan)
-- Open file in native application (double-click)
-- Show in Finder / Explorer
-- Multi-file drag-out to OS
-- Optional copy-on-import to a managed library folder
-- Library folder migration
-
-### Lightbox
-- Full-screen asset preview modal
-- Keyboard navigation (arrow keys)
-- 3D model interactive viewer (orbit, pan, zoom via Three.js)
-- Video and audio playback
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Desktop runtime | Electron 28 |
-| UI framework | React 18 |
-| Language | TypeScript 5 |
-| Styling | CSS Modules + CSS custom properties |
-| State management | Zustand 4 |
-| Build tool | Vite 5 |
-| Packaging | electron-builder 24 |
-| Database | sql.js 1.12 (SQLite compiled to WASM) |
-| 3D rendering | Three.js r128 |
-| Image processing | Jimp 1.6 |
-| Icons | Lucide React |
-| IPC bridge | Electron contextBridge + ipcRenderer |
-
-> **Zero native modules** — no C++ compilation. Works on any Windows, macOS, or Linux setup out of the box.
-
----
-
-## 📁 Project Structure
-
-```
-stag/
-├── electron/
-│   ├── main.js             # Compiled Electron main process (output)
-│   └── preload.js          # Compiled secure IPC bridge (output)
-├── src/
-│   ├── main/
-│   │   ├── main.ts         # Window creation, IPC handlers, DB, file ops
-│   │   └── preload.ts      # contextBridge API exposed to renderer
-│   └── renderer/
-│       ├── components/
-│       │   ├── AssetGrid.tsx          # Thumbnail grid with per-type renderers
-│       │   ├── Inspector.tsx          # Right-panel metadata + editing
-│       │   ├── LightboxModal.tsx      # Full-screen preview + 3D viewer
-│       │   ├── MainContent.tsx        # Filtering logic + layout switcher
-│       │   ├── SettingsPanel.tsx      # Appearance, library, AI, performance tabs
-│       │   ├── Sidebar.tsx            # Folder tree + library navigation
-│       │   ├── TitleBar.tsx           # Custom frameless title bar
-│       │   ├── Toolbar.tsx            # Search, sort, import, view controls
-│       │   └── ToastNotification.tsx  # Transient status messages
-│       ├── store/
-│       │   └── useStore.ts   # Zustand global state + all actions
-│       ├── utils/
-│       │   └── helpers.ts    # ID generation, file type utilities, demo data
-│       ├── styles/
-│       │   ├── global.css    # CSS variables + base theme
-│       │   └── App.module.css
-│       ├── thumbEngine.ts    # Background thumbnail queue (video + 3D)
-│       ├── types.ts          # TypeScript interfaces (Asset, Folder, etc.)
-│       ├── App.tsx           # Root component + DB bootstrap
-│       ├── main.tsx          # React entry point
-│       └── index.html        # HTML shell
-├── public/
-│   └── icon.png
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── tsconfig.main.json
-└── setup.sh
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Node.js 18+** — [Download here](https://nodejs.org)
-- **npm** (bundled with Node.js)
-
-Verify your setup:
-```bash
-node -v   # should print v18.x or higher
-npm -v
-```
-
-### Quick Setup
-
-A convenience script is provided that checks requirements and installs dependencies:
+### Install
 
 ```bash
-chmod +x setup.sh
+git clone <repository-url>
+cd "Stag App"
+npm ci
+```
+
+`npm ci` is the supported install command. It uses `package-lock.json`, runs `electron-builder install-app-deps`, and aligns native modules such as `better-sqlite3` with the exact Electron ABI.
+
+The included helper performs the same setup on macOS/Linux:
+
+```bash
 ./setup.sh
 ```
 
-Or manually:
+Do not replace `npm ci` with a broad dependency upgrade. Electron and `better-sqlite3` are deliberately exact-pinned and verified together.
 
-```bash
-npm install
-```
-
-### Development
-
-Start both the Vite dev server and Electron in one command:
+### Run
 
 ```bash
 npm run dev
 ```
 
-This runs Vite on `http://localhost:3000` and waits for it to be ready before launching Electron.
+This starts Vite on port 3000 and launches Electron after the renderer is reachable.
 
-To run them in separate terminals:
+For separate terminals:
 
 ```bash
-# Terminal 1 — Vite renderer
 npm run dev:renderer
-
-# Terminal 2 — Electron (after "ready" appears in Terminal 1)
 npm run dev:electron
 ```
 
-### Build for Production
+### Verify
 
 ```bash
-# Build the renderer (outputs to dist/)
+npm test
+```
+
+The full suite runs:
+
+- strict TypeScript and dead-code/IPC audits;
+- AI contracts and task coordinator tests;
+- layout contracts;
+- media orientation, F4V, and recent-item tests;
+- Python runtime contracts;
+- native dependency and Electron SQLite tests.
+
+Useful focused commands:
+
+```bash
+npm run test:code
+npm run test:ai
+npm run test:layout
+npm run test:media
+npm run test:python
+npm run test:native
+npm run electron:rebuild
+```
+
+## First Run
+
+On a fresh install Stag shows:
+
+1. Welcome.
+2. Theme selection.
+3. Dependency requirement and internet check.
+4. Runtime installation.
+5. The main library.
+
+The private runtime contains Python, FFmpeg, FFprobe, ImageMagick, Ghostscript, and AI Python packages. Downloads use `.part` files and readiness markers. If installation is interrupted, the next launch returns to installation and validates the actual files before opening the library.
+
+Runtime locations:
+
+| Platform | Default location |
+| --- | --- |
+| macOS | `~/.stag/runtime` |
+| macOS home path containing spaces | `/Users/Shared/StagRuntime-<uid>` |
+| Windows | `%APPDATA%\Stag\runtime` |
+
+The tools are not added permanently to the user's system `PATH`. Stag supplies private executable paths and a process-local environment whenever it invokes them.
+
+## Data Locations
+
+The default library is inside Electron's user-data directory:
+
+| Platform | Default library |
+| --- | --- |
+| macOS | `~/Library/Application Support/Stag/stag-library` |
+| Windows | `%APPDATA%\Stag\stag-library` |
+
+Important contents:
+
+```text
+stag-library/
+|-- library.db
+|-- library.db-wal
+|-- library.db-shm
+|-- startup-cache.json
+|-- thumbs/
+`-- ai-index/
+```
+
+Settings and logs live in Electron's Stag user-data folder. The default managed import folders are `Pictures/Stag/LocalGrab` and `Pictures/Stag/WebGrab`.
+
+Uninstalling the application binary does not automatically delete the library or private runtime. This protects user data across upgrades and reinstalls.
+
+## Build
+
+Build the renderer:
+
+```bash
 npm run build
-
-# Package as Windows installer (.exe via NSIS)
-npm run dist:win
-
-# Package as macOS disk image (.dmg)
-npm run dist:mac
 ```
 
-Built artifacts are placed in the `release/` directory.
+Create platform installers:
 
-| Platform | Output |
-|---|---|
-| Windows | `release/Stag Setup.exe` (NSIS, x64) |
-| macOS | `release/Stag.dmg` (x64 + arm64 universal) |
-| Linux | `release/Stag.AppImage` |
-
----
-
-## ⚙️ Configuration
-
-### Settings Panel
-
-Open via the gear icon in the title bar. Settings are grouped into four tabs:
-
-**Appearance**
-- Background color — base color for all panel layers
-- Accent color — used for selections, highlights, and interactive elements
-- Glass opacity — frosted glass overlay intensity
-- Blur strength — backdrop blur radius in pixels
-
-**Library**
-- Library folder path — where copies of imported assets are stored
-- Move library — relocate your library to a new folder
-
-**Performance**
-- Import threads — number of concurrent thumbnail generation workers (1–4)
-
-**AI**
-- Enable AI tagging — toggle Ollama-based auto-tagging
-- Ollama server URL — defaults to `http://localhost:11434`
-- Model — select from detected Ollama models (e.g., `llava`, `llava:13b`)
-
-### Data Storage
-
-Stag stores its library database and thumbnails in the platform-specific user data directory:
-
-| Platform | Path |
-|---|---|
-| Windows | `%APPDATA%\stag\` |
-| macOS | `~/Library/Application Support/stag/` |
-| Linux | `~/.config/stag/` |
-
-The database file is `library.json` (persisted via `sql.js`). Thumbnails are saved as individual files alongside it.
-
----
-
-## 🧩 IPC API Reference
-
-The renderer communicates with the main process exclusively through the `window.electronAPI` bridge exposed by `preload.ts`. Available methods:
-
-| Method | Description |
-|---|---|
-| `minimize()` | Minimize the window |
-| `maximize()` | Maximize / restore the window |
-| `close()` | Close the window |
-| `openFiles()` | Open a multi-file picker dialog |
-| `openFolder()` | Open a folder picker dialog |
-| `selectDirectory()` | Select a destination directory |
-| `getFileInfo(path)` | Get file size and timestamps |
-| `readDir(path)` | List directory contents |
-| `fileExists(path)` | Check if a path exists |
-| `copyFile(src, dest)` | Copy a file |
-| `copyFilesToDest(srcs, dest)` | Batch copy files |
-| `deleteFile(path)` | Delete a file |
-| `readBase64(path)` | Read file as base64 |
-| `openPath(path)` | Open in native application |
-| `showInFolder(path)` | Reveal in Finder / Explorer |
-| `startDrag(path)` | Initiate OS drag-out for one file |
-| `startDragMulti(paths)` | Initiate OS drag-out for multiple files |
-| `createThumb(path)` | Generate a base64 thumbnail (images only) |
-| `hashFile(path)` | MD5 hash a file |
-| `dbLoad()` | Load the full library from DB |
-| `dbInsertAsset(asset)` | Insert a new asset record |
-| `dbUpdateAsset(id, update)` | Update an asset record |
-| `dbBatchUpdate(ops)` | Batch update multiple assets |
-| `dbSaveThumbnail(id, data)` | Save a thumbnail and get its file URL |
-| `dbHardDeleteAssets(ids)` | Permanently delete asset records |
-| `dbUpsertFolder(folder)` | Create or update a folder |
-| `dbDeleteFolder(id)` | Delete a folder |
-| `dbUpsertSmartFolder(sf)` | Create or update a Smart Folder |
-| `dbDeleteSmartFolder(id)` | Delete a Smart Folder |
-| `dbAddTag(tag)` | Add a global tag |
-| `dbDeleteTag(tag)` | Delete a global tag |
-| `loadSettings()` | Load app settings |
-| `saveSettings(settings)` | Save app settings |
-| `getLibraryPath()` | Get current library folder path |
-| `moveLibrary(path)` | Move the library to a new path |
-| `getVersion()` | Get app version string |
-| `getPlatform()` | Get OS platform string |
-
----
-
-## 🗂️ Data Model
-
-### Asset
-
-```typescript
-interface Asset {
-  id: string
-  name: string
-  ext: string
-  filePath: string
-  thumbnailData?: string    // base64 data URL or file:// URL
-  size: number
-  width?: number
-  height?: number
-  duration?: number         // for video/audio
-  mtime: number
-  btime: number
-  importTime: number
-  tags: string[]
-  folders: string[]
-  rating: number            // 0–5
-  notes: string
-  url: string
-  colors: ColorInfo[]       // dominant color palette
-  annotation: Annotation[]
-  deleted?: boolean         // soft-deleted (in Trash)
-  deletedAt?: number
-  aiTagged?: boolean
-  aiDescription?: string
-}
+```bash
+npm run dist:mac:arm64
+npm run dist:mac:x64
+npm run dist:win:x64
+npm run dist:win:arm64
 ```
 
-### Folder
+Each distribution command:
 
-```typescript
-interface Folder {
-  id: string
-  name: string
-  parentId: string | null
-  color: string
-  icon: string
-  autoTags: string[]
-  sortOrder: number
-}
+1. prepares native dependencies for the requested Electron target;
+2. prepares the matching Poppler runtime;
+3. builds the renderer;
+4. packages with electron-builder;
+5. validates packaged native binaries after packing.
+
+Every release must use a new semantic version. Windows installers use
+electron-builder's standard NSIS extraction flow and its supported
+always-recreate desktop shortcut option. The ARM64 include replaces only the
+unreliable 32-bit NSIS host-architecture probe before electron-builder defines
+its payload-selection macros. The replacement reads the machine architecture
+from the system registry because Parallels may omit processor environment
+variables from x86 processes. It must not perform post-install path checks or
+duplicate shortcut creation.
+
+Windows NSIS payloads use ZIP extraction with differential packaging disabled.
+This extracts directly to the destination; the default 7z flow copies through
+an NSIS temporary folder and can omit root ARM64 executable files under
+Windows-on-ARM virtualization.
+
+Windows ARM64 uses native ARM64 Electron and native modules where available, with an x64 private Python/AI runtime under Windows emulation because the required PyTorch and FAISS wheels are not published for Windows ARM64.
+
+Build and smoke-test installers on their target operating system. Cross-building can create artifacts, but it cannot prove target runtime behavior, signing, installer behavior, or native loading.
+
+## Project Map
+
+```text
+AI-index/                 Python embedding and similarity-search entry points
+build/                    Application and installer icons
+docs/                     Feature, architecture, IPC, and function documentation
+electron/                 Main process, preload bridge, workers, runtime managers
+resources/poppler/        Per-target Poppler runtime files
+scripts/                  Build preparation, validation, and contract audits
+src/renderer/             React renderer, store, components, styles, helpers
 ```
 
-### Smart Folder
+Key entry points:
 
-```typescript
-interface SmartFolder {
-  id: string
-  name: string
-  rules: SmartRule[]
-  logic: 'ANY' | 'ALL'
-}
+- `electron/main.js`: application lifecycle, SQLite, thumbnails, previews, IPC, watchers, web grab, and AI orchestration.
+- `electron/preload.js`: the context-isolated `window.electronAPI` bridge.
+- `src/renderer/main.tsx`: renderer bootstrap.
+- `src/renderer/components/RuntimeBootstrap.tsx`: onboarding and dependency installation.
+- `src/renderer/App.tsx`: main application shell and startup hydration.
+- `src/renderer/store/useStore.ts`: renderer state and mutations.
+- `src/renderer/thumbEngine.ts`: renderer-assisted video and 3D thumbnail work.
 
-interface SmartRule {
-  field: 'tags' | 'name' | 'ext' | 'rating' | 'color'
-  operator: 'contains' | 'is' | 'gte' | 'lte' | 'similar'
-  value: string | number
-}
+## Documentation
+
+- [Feature Guide](docs/FEATURES.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Function Reference](docs/FUNCTION_REFERENCE.md)
+- [IPC Reference](docs/IPC_REFERENCE.md)
+- [Production Hardening Plan](docs/production-hardening-plan.md)
+
+## Native Dependency Rule
+
+`better-sqlite3` is a native C++ addon. It must match Electron's ABI and the target CPU architecture. The repository enforces this with:
+
+- exact Electron and `better-sqlite3` versions;
+- `postinstall` native dependency alignment;
+- `@electron/rebuild`;
+- per-target native preparation;
+- electron-builder `npmRebuild`;
+- packaged binary validation;
+- an Electron smoke test that opens SQLite.
+
+If native loading fails, run:
+
+```bash
+npm ci
+npm run electron:rebuild
+npm run test:native
 ```
 
----
+## Logs
 
-## 🗺️ Roadmap
+Application logs are written under the Stag user-data directory in `logs/`. Runtime installation uses a separate `install.log` inside the private runtime directory. Packaged users can open the installation log from the failure screen.
 
-- [ ] Hover preview on thumbnails
-- [ ] Spacebar fullscreen preview shortcut
-- [ ] Color-based search
-- [ ] Find duplicates (pHash)
-- [ ] Batch rename
-- [ ] Image annotations
-- [ ] Password-protected folders
-- [ ] Plugin system (JS / HTML)
-- [ ] Browser extension for web asset capture
-- [ ] Multiple library support
-- [ ] Cloud sync (Dropbox / Google Drive)
+## License
 
----
-
-## 📄 License
-
-MIT © 2025 Stag
+See [LICENSE](LICENSE).

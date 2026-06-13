@@ -21,8 +21,17 @@ export function getFileExt(name: string): string {
   return (name.split('.').pop() || '').toLowerCase()
 }
 
+export function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true
+  return target.isContentEditable || !!target.closest('[contenteditable="true"]')
+}
+
 export function isImage(ext: string): boolean {
-  return ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','tif','ico','avif','heic','heif','raw','cr2','nef'].includes(ext)
+  return ['jpg','jpeg','jpe','jfif','png','gif','webp','svg','bmp',
+          'tiff','tif','ico','avif','heic','heif','hif',
+          'icns','tga','dds','eps','tgs',
+          'raw','cr2','nef'].includes(ext)
 }
 
 export function isVideo(ext: string): boolean {
@@ -51,55 +60,8 @@ export function isDesign(ext: string): boolean {
   return ['psd','ai','xd','fig','sketch','eps','afdesign','afphoto'].includes(ext)
 }
 
-export function getFileCategory(ext: string): string {
-  if (isImage(ext)) return 'image'
-  if (isVideo(ext)) return 'video'
-  if (isAudio(ext)) return 'audio'
-  if (is3D(ext))    return '3d'
-  if (isFont(ext))  return 'font'
-  if (isDesign(ext))return 'design'
-  if (isDoc(ext))   return 'doc'
-  return 'file'
-}
-
-export function getDefaultTags(ext: string): string[] {
-  if (isImage(ext))  return []
-  if (isVideo(ext))  return ['Video']
-  if (isAudio(ext))  return ['Audio']
-  if (is3D(ext))     return ['3D', ext.toUpperCase()]
-  if (isFont(ext))   return ['Font', 'Typography']
-  if (isDesign(ext)) return ['Design', ext.toUpperCase()]
-  if (ext === 'pdf') return ['PDF', 'Document']
-  if (ext === 'glb' || ext === 'gltf') return ['3D', 'GLTF']
-  if (ext === 'obj') return ['3D', 'OBJ']
-  if (ext === 'fbx') return ['3D', 'FBX']
-  return []
-}
-
-export function getExtBadgeColor(ext: string): string {
-  const map: Record<string, string> = {
-    jpg:'#4a9eff', jpeg:'#4a9eff', png:'#52c078', gif:'#f5a623', webp:'#9b59b6',
-    svg:'#e74c3c', pdf:'#e05252', psd:'#31a8ff', ai:'#ff9a00',
-    mp4:'#ff6b6b', mov:'#ff6b6b', mkv:'#ff6b6b', webm:'#ff6b6b', avi:'#ff6b6b',
-    mp3:'#4d96ff', wav:'#4d96ff', flac:'#4d96ff', aac:'#4d96ff', m4a:'#4d96ff',
-    ttf:'#6bcb77', otf:'#6bcb77', woff:'#6bcb77', woff2:'#6bcb77',
-    glb:'#ff922b', gltf:'#ff922b', obj:'#ff922b', fbx:'#ff922b', stl:'#ff922b',
-    fig:'#a259ff', sketch:'#faa41a', xd:'#ff61f6',
-  }
-  return map[ext] || '#5c6370'
-}
-
-export function getTypeIcon(ext: string): string {
-  const cat = getFileCategory(ext)
-  const icons: Record<string, string> = {
-    image: '🖼', video: '🎬', audio: '🎵', '3d': '📦',
-    font: '🔤', design: '🎨', doc: '📄', file: '📁',
-  }
-  return icons[cat] || '📁'
-}
-
 // ── Color extraction ──────────────────────────────────────────────────────────
-export function extractColorsFromImg(img: HTMLImageElement): string[] {
+function extractColorsFromImg(img: HTMLImageElement): string[] {
   try {
     const canvas = document.createElement('canvas')
     canvas.width = 50; canvas.height = 50
@@ -124,35 +86,39 @@ export function extractColorsFromImg(img: HTMLImageElement): string[] {
   } catch { return [] }
 }
 
-// Compress image to small thumbnail data URL
-export function compressImageToThumb(src: string, maxW = 400, maxH = 400): Promise<{ dataUrl: string; w: number; h: number }> {
-  return new Promise((resolve) => {
+export function extractPaletteFromImageSrc(src: string): Promise<{ hex: string; ratio: number }[]> {
+  return new Promise(resolve => {
+    if (!src) { resolve([]); return }
     const img = new Image()
     img.onload = () => {
-      const ratio = Math.min(maxW / img.width, maxH / img.height, 1)
-      const w = Math.round(img.width * ratio)
-      const h = Math.round(img.height * ratio)
-      const canvas = document.createElement('canvas')
-      canvas.width = w; canvas.height = h
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, w, h)
-      resolve({ dataUrl: canvas.toDataURL('image/webp', 0.75), w: img.width, h: img.height })
+      const colors = extractColorsFromImg(img)
+      resolve(colors.map((hex, i) => ({ hex: rgbToHex(hex), ratio: [0.35, 0.25, 0.2, 0.12, 0.08][i] || 0.05 })))
     }
-    img.onerror = () => resolve({ dataUrl: src, w: 0, h: 0 })
+    img.onerror = () => resolve([])
     img.src = src
   })
 }
 
-export function formatDuration(secs: number): string {
-  const m = Math.floor(secs / 60)
-  const s = Math.floor(secs % 60)
-  return `${m}:${String(s).padStart(2,'0')}`
+const paletteJobs = new Set<string>()
+
+export async function extractPaletteOnceForAsset(
+  assetId: string,
+  src: string | undefined,
+  existingColors: { hex: string; ratio: number }[] | undefined,
+  save: (colors: { hex: string; ratio: number }[]) => void | Promise<void>
+) {
+  if (!assetId || !src || existingColors?.length || paletteJobs.has(assetId)) return
+  paletteJobs.add(assetId)
+  try {
+    const colors = await extractPaletteFromImageSrc(src)
+    if (colors.length) await save(colors)
+  } finally {
+    paletteJobs.delete(assetId)
+  }
 }
 
-// Aliases used by Inspector and store
-export const extractColors = extractColorsFromImg
-
-export function rgbToHex(rgb: string): string {
+// Compress image to a high-quality thumbnail data URL
+function rgbToHex(rgb: string): string {
   // Already a hex string (from extractColorsFromImg which returns hex directly)
   if (rgb.startsWith('#')) return rgb
   const m = rgb.match(/\d+/g)
